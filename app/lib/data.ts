@@ -11,6 +11,29 @@ import { formatCurrency } from './utils';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
+export async function fetchInvoiceTotals () {
+  try {
+    const result = await sql`
+      SELECT 
+        COUNT(*) as number_of_invoices,
+        COUNT(CASE WHEN i.status = 'pending' THEN 1 END) as number_of_paid_invoices,
+        COUNT(CASE WHEN i.status = 'paid' THEN 1 END) as number_of_pending_invoices,
+        MAX(c.numberOfCustomers) as number_of_customers
+      FROM invoices i
+      CROSS JOIN (
+        SELECT COUNT(*) as numberOfCustomers 
+        FROM customers
+      ) c
+    `;
+
+        return result[0];
+      }
+      catch (error) {
+        console.error('Database Error:', error);
+        throw new Error('Failed to fetch the latest invoices.');
+      }
+    }
+
 export async function fetchRevenue() {
   try {
     // Artificially delay a response for demo purposes.
